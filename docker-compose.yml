@@ -1,0 +1,75 @@
+# Place this file in your project's root directory (your-project-root/)
+version: '3.8' # Specify Docker Compose file version
+
+services:
+  # Backend Service (Node.js/Express)
+  backend:
+    build:
+      context: ./backend # Path to the backend Dockerfile directory
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001" # Map host port 5001 to container port 5001
+    depends_on:
+      - mongo # Ensure MongoDB starts before the backend
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/aframeGameDB # Service name 'mongo' is used as hostname
+      - PORT=5001
+      - NODE_ENV=development # Set to 'production' for production builds
+    volumes:
+      # Mount local backend code for development to reflect changes without rebuilding image.
+      # Comment out or remove for production to use the image's built code.
+      - ./backend/src:/usr/src/app/src 
+      - ./backend/dist:/usr/src/app/dist # If you want to see compiled output locally
+    networks:
+      - game-network # Connect to a custom network
+    # Add command for development with nodemon if you want live reload for backend
+    # command: npm run dev 
+
+  # MongoDB Service
+  mongo:
+    image: mongo:latest # Use the official MongoDB image from Docker Hub
+    ports:
+      - "27017:27017" # Map host port 27017 to container port 27017
+    volumes:
+      # Persist MongoDB data by mounting a volume on the host
+      - mongo-data:/data/db 
+    networks:
+      - game-network # Connect to the same custom network
+
+  # Frontend Service (Next.js)
+  frontend:
+    build:
+      context: ./ # Assuming your Next.js Dockerfile (Dockerfile.next) is in the project root
+      dockerfile: Dockerfile.frontend # Name of your frontend Dockerfile
+      # args: # Optional: Pass build-time arguments for environment variables
+        # NEXT_PUBLIC_API_URL: http://localhost:5001/api # For local dev, if backend is not dockerized or on host network
+        # NEXT_PUBLIC_API_URL: http://backend:5001/api # For when backend is also dockerized on same network
+    ports:
+      - "3000:3000" # Map host port 3000 to container port 3000
+    depends_on:
+      - backend # Optional: ensure backend starts, though frontend might start consuming API later
+    environment:
+      # Runtime environment variables for Next.js container
+      # This is how the frontend container knows where the backend API is.
+      # The backend service is accessible via its service name 'backend' on the Docker network.
+      - NEXT_PUBLIC_API_URL=http://backend:5001/api 
+      # - NODE_ENV=development # Or production for production builds
+    volumes:
+      # Mount local frontend code for development (reflects changes without rebuilding image for dev).
+      # This is typical for Next.js hot reloading.
+      # For production, you'd rely on the image built by Dockerfile.next.
+      - ./:/app # Mounts the entire project root (where Next.js app lives) to /app in container
+      - /app/node_modules # Exclude node_modules from being overwritten by the host mount
+      - /app/.next # Exclude .next from being overwritten by the host mount
+    networks:
+      - game-network
+
+# Define a custom network for services to communicate
+networks:
+  game-network:
+    driver: bridge
+
+# Define a named volume for MongoDB data persistence
+volumes:
+  mongo-data:
+    driver: local # Use local driver for data persistence on the host machine

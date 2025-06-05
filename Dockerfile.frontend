@@ -1,0 +1,65 @@
+# === Stage 1: Install Dependencies ===
+# Use an official Node.js runtime as a parent image.
+# Using a specific version like 18-alpine is good for consistency and size.
+FROM node:18-alpine AS deps
+
+# Set the working directory in the container.
+WORKDIR /app
+
+# Copy package.json and package-lock.json (or yarn.lock) to leverage Docker cache.
+COPY package.json yarn.lock* package-lock.json* ./
+
+# Install dependencies.
+# If using yarn: RUN yarn install --frozen-lockfile
+RUN npm install
+
+# === Stage 2: Build the Next.js Application ===
+# Use the same Node.js version as the previous stage.
+FROM node:18-alpine AS builder
+
+# Set the working directory.
+WORKDIR /app
+
+# Copy dependencies from the 'deps' stage.
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy the rest of the application source code.
+COPY . .
+
+# Set build-time arguments for environment variables if needed (e.g., API URL)
+# These can be passed during the `docker build` command or from docker-compose.
+# ARG NEXT_PUBLIC_API_URL
+# ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+# Build the Next.js application for production.
+RUN npm run build
+
+# === Stage 3: Production Environment ===
+# Use a lightweight Node.js image for the final production stage.
+FROM node:18-alpine AS runner
+
+# Set the working directory.
+WORKDIR /app
+
+# Set the environment to production.
+ENV NODE_ENV production
+
+# Optionally, you can create a non-root user for security.
+# RUN addgroup --system --gid 1001 nodejs
+# RUN adduser --system --uid 1001 nextjs
+# USER nextjs
+
+# Copy built assets from the 'builder' stage.
+# This includes the .next folder (production build), public folder, and package.json.
+COPY --from=builder /app/public ./public
+# Use chown if using non-root user
+COPY --from=builder --chown=node:node /app/.next ./.next 
+# Only runtime dependencies if pruned
+COPY --from=builder /app/node_modules ./node_modules 
+COPY --from=builder /app/package.json ./package.json
+
+# Expose the port the Next.js app runs on (default is 3000).
+EXPOSE 3000
+
+# Define the command to run the Next.js application in production mode.
+CMD ["npm", "start"]

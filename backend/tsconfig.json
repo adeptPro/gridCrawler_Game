@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                       /* Specify ECMAScript target version. */
+    "module": "commonjs",                     /* Specify module code generation (CommonJS is typical for Node.js). */
+    "lib": ["ES2020", "DOM"],                 /* Specify library files to be included. DOM might not be strictly needed for backend but often included. */
+    "outDir": "./dist",                       /* Redirect output structure to the 'dist' directory. THIS IS KEY. */
+    "rootDir": "./src",                       /* Specify the root directory of input files. */
+    "strict": true,                           /* Enable all strict type-checking options. */
+    "esModuleInterop": true,                  /* Enables emit interoperability between CommonJS and ES Modules. */
+    "skipLibCheck": true,                     /* Skip type checking of declaration files (d.ts). */
+    "forceConsistentCasingInFileNames": true, /* Disallow inconsistently-cased references to the same file. */
+    "resolveJsonModule": true,                /* Allow importing .json files. */
+    "sourceMap": true,                        /* Generates corresponding '.map' file for debugging. */
+    "declaration": true,                      /* Generates corresponding '.d.ts' file. Optional but good for libraries. */
+    "declarationMap": true,                   /* Generates a sourcemap for each corresponding '.d.ts' file. */
+    "noEmit": false                           /* ENSURE THIS IS FALSE OR REMOVED (false is default if outDir is set). */
+    // "baseUrl": "./src",                    /* Optional: Base directory to resolve non-absolute module names. */
+    // "paths": {                             /* Optional: Module path aliases. */
+    //   "@/*": ["*"]
+    // }
+  },
+  "include": [
+    "src/**/*"                                /* Specifies files to include in compilation (all .ts files in src). */
+  ],
+  "exclude": [
+    "node_modules",                           /* Exclude node_modules directory. */
+    "dist",                                   /* Exclude the output directory itself. */
+    "src/test/**/*"                           /* Exclude test files from the production build output. */
+  ]
+}
